@@ -1,6 +1,6 @@
 # Circle Context Menu
 
-Circle context menu is a library to have a custom interactive circle right click menu on websites.
+Circle context menu is a library to have a custom interactive circle right click menu on elements.
 
 ### Usage
 
@@ -9,14 +9,14 @@ Circle menu can be attached to an element on constructor or can manually be show
 ```js
 myElement.style.userSelect = "none";
 const menu = new CircleContextMenu({
-  r: 300,
+  radius: 300,
   background: "#e04e15",
   color: "#fcf7ff",
   chosenBackground: "#0a1f33",
   chosenColor: "#e6c670",
-  chooseOnRelease: true,
   font: "40px bold serif",
   element: myElement,
+  chooseOnRelease: true,
   touchDuration: 500,
   tolerance: 5,
 });
@@ -25,7 +25,7 @@ const menu = new CircleContextMenu({
 or
 
 ```js
-const menu = new CircleContextMenu({ r: 300 });
+const menu = new CircleContextMenu({ radius: 300 });
 myElement.addEventListener("mousedown", evt => {
   if (evt.buttons === 2) menu.show(evt.clientX, evt.clientY);
 });
