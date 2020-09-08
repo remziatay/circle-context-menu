@@ -6,20 +6,20 @@ export class CircleContextMenu {
     chosenBackground = 'blue',
     chosenColor = color,
     font = '35px sans-serif',
-    chooseOnRelease = true,
     element,
+    chooseOnRelease = true,
     touchDuration = 500,
     tolerance = 5
   } = {}) {
-    Object.assign(this, { r: radius, background, color, chosenBackground, chosenColor, font, tolerance })
+    Object.assign(this, { r: radius, background, color, chosenBackground, chosenColor, font })
     this.canvas = document.createElement('canvas')
     this.ctx = this.canvas.getContext('2d')
     this.buttons = []
     this.buttonCount = 0
-    this.initCanvas(element, chooseOnRelease, touchDuration)
+    this.initCanvas(element, chooseOnRelease, touchDuration, tolerance)
   }
 
-  initCanvas (el, onRelease, duration) {
+  initCanvas (el, onRelease, duration, tolerance) {
     const canvas = this.canvas
     const style = canvas.style
     style.width = '100vw'
@@ -32,12 +32,14 @@ export class CircleContextMenu {
     canvas.height = canvas.offsetHeight * window.devicePixelRatio
 
     this.hide()
-    // canvas.oncontextmenu = (evt) => evt.preventDefault()
+    canvas.oncontextmenu = (evt) => { if (evt.button === 2) evt.preventDefault() }
     canvas.style.userSelect = 'none'
     canvas.onmousemove = (evt) => this.onmousemove(evt)
-    // canvas.ontouchmove = (evt) => this.ontouchmove(evt)
+    canvas.ontouchmove = (evt) => this.ontouchmove(evt)
     canvas.ontouchend = () => this.choose()
     window.addEventListener('resize', () => this.resize())
+    if (onRelease) canvas.addEventListener('mouseup', () => this.choose())
+    else canvas.addEventListener('click', evt => { if (evt.button === 0) this.choose() })
 
     if (!el) return
     el.addEventListener('contextmenu', evt => { if (evt.button === 2) evt.preventDefault() })
@@ -45,10 +47,8 @@ export class CircleContextMenu {
       el.addEventListener('mousedown', evt => {
         if (evt.buttons === 2) this.show(evt.clientX, evt.clientY)
       })
-      canvas.addEventListener('mouseup', () => this.choose())
     } else {
       el.addEventListener('contextmenu', evt => { if (evt.button === 2) this.show(evt.clientX, evt.clientY) })
-      canvas.addEventListener('click', evt => { if (evt.button === 0) this.choose() })
     }
 
     if (duration) {
@@ -75,7 +75,7 @@ export class CircleContextMenu {
       el.addEventListener('touchmove', evt => {
         const touch = evt.touches[0]
         if (this.touchTimeout &&
-          (this.lastTouch.clientX - touch.clientX) ** 2 + (this.lastTouch.clientY - touch.clientY) ** 2 > this.tolerance ** 2) {
+          (this.lastTouch.clientX - touch.clientX) ** 2 + (this.lastTouch.clientY - touch.clientY) ** 2 > tolerance ** 2) {
           this.touchTimeout = clearTimeout(this.touchTimeout)
         }
         this.lastTouch = touch
