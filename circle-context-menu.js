@@ -12,14 +12,16 @@ export class CircleContextMenu {
     tolerance = 5
   } = {}) {
     Object.assign(this, { r: radius, background, color, chosenBackground, chosenColor, font })
+    Object.assign(this, { onRelease: chooseOnRelease, touchDuration, tolerance })
     this.canvas = document.createElement('canvas')
     this.ctx = this.canvas.getContext('2d')
     this.buttons = []
     this.buttonCount = 0
-    this.initCanvas(element, chooseOnRelease, touchDuration, tolerance)
+    this.initCanvas(chooseOnRelease)
+    this.attach(element)
   }
 
-  initCanvas (el, onRelease, duration, tolerance) {
+  initCanvas (onRelease) {
     const canvas = this.canvas
     const style = canvas.style
     style.width = '100vw'
@@ -31,7 +33,6 @@ export class CircleContextMenu {
     canvas.width = canvas.offsetWidth * window.devicePixelRatio
     canvas.height = canvas.offsetHeight * window.devicePixelRatio
 
-    this.hide()
     canvas.oncontextmenu = (evt) => { if (evt.button === 2) evt.preventDefault() }
     canvas.style.userSelect = 'none'
     canvas.onmousemove = (evt) => this.onmousemove(evt)
@@ -40,47 +41,71 @@ export class CircleContextMenu {
     window.addEventListener('resize', () => this.resize())
     if (onRelease) canvas.addEventListener('mouseup', () => this.choose())
     else canvas.addEventListener('click', evt => { if (evt.button === 0) this.choose() })
+    this.hide()
+  }
 
-    if (!el) return
-    el.addEventListener('contextmenu', evt => { if (evt.button === 2) evt.preventDefault() })
+  attach (element) {
+    if (!element) return
+    const { onRelease, touchDuration, tolerance } = this
+    if (!this.elListeners) this.elListeners = []
+    const list = this.elListeners
+    list.push({ contextmenu: evt => { if (evt.button === 2) evt.preventDefault() } })
+    element.addEventListener('contextmenu', list[list.length - 1].contextmenu)
     if (onRelease) {
-      el.addEventListener('mousedown', evt => {
-        if (evt.buttons === 2) this.show(evt.clientX, evt.clientY)
-      })
+      list.push({ mousedown: evt => { if (evt.buttons === 2) this.show(evt.clientX, evt.clientY) } })
+      element.addEventListener('mousedown', list[list.length - 1].mousedown)
     } else {
-      el.addEventListener('contextmenu', evt => { if (evt.button === 2) this.show(evt.clientX, evt.clientY) })
+      list.push({ contextmenu: evt => { if (evt.button === 2) this.show(evt.clientX, evt.clientY) } })
+      element.addEventListener('contextmenu', list[list.length - 1].contextmenu)
     }
 
-    if (duration) {
+    if (touchDuration) {
       const forwardMove = evt => this.ontouchmove(evt)
 
       const forwardEnd = () => {
         this.choose()
-        el.removeEventListener('touchmove', forwardMove)
-        el.removeEventListener('touchend', forwardEnd)
+        element.removeEventListener('touchmove', forwardMove)
+        element.removeEventListener('touchend', forwardEnd)
       }
 
-      el.addEventListener('touchstart', evt => {
-        this.lastTouch = evt.touches[0]
-        this.touchTimeout = clearTimeout(this.touchTimeout)
-        this.touchTimeout = setTimeout(() => {
-          this.show(evt.touches[0].clientX, evt.touches[0].clientY)
-          el.addEventListener('touchmove', forwardMove)
-          el.addEventListener('touchend', forwardEnd)
-        }, duration)
-      })
-
-      el.addEventListener('touchend', () => { this.touchTimeout = clearTimeout(this.touchTimeout) })
-
-      el.addEventListener('touchmove', evt => {
-        const touch = evt.touches[0]
-        if (this.touchTimeout &&
-          (this.lastTouch.clientX - touch.clientX) ** 2 + (this.lastTouch.clientY - touch.clientY) ** 2 > tolerance ** 2) {
+      list.push({
+        touchstart: evt => {
+          this.lastTouch = evt.touches[0]
           this.touchTimeout = clearTimeout(this.touchTimeout)
+          this.touchTimeout = setTimeout(() => {
+            this.show(evt.touches[0].clientX, evt.touches[0].clientY)
+            element.addEventListener('touchmove', forwardMove)
+            element.addEventListener('touchend', forwardEnd)
+          }, touchDuration)
         }
-        this.lastTouch = touch
       })
+      element.addEventListener('touchstart', list[list.length - 1].touchstart)
+
+      list.push({ touchend: () => { this.touchTimeout = clearTimeout(this.touchTimeout) } })
+      element.addEventListener('touchend', list[list.length - 1].touchend)
+
+      list.push({
+        touchmove: evt => {
+          const touch = evt.touches[0]
+          if (this.touchTimeout &&
+          (this.lastTouch.clientX - touch.clientX) ** 2 + (this.lastTouch.clientY - touch.clientY) ** 2 > tolerance ** 2) {
+            this.touchTimeout = clearTimeout(this.touchTimeout)
+          }
+          this.lastTouch = touch
+        }
+      })
+      element.addEventListener('touchmove', list[list.length - 1].touchmove)
     }
+  }
+
+  detach (element) {
+    if (!element) return
+
+    for (const listener of this.elListeners) {
+      const l = Object.entries(listener)[0]
+      element.removeEventListener(l[0], l[1])
+    }
+    this.elListeners = null
   }
 
   resize () {
