@@ -42,6 +42,19 @@ If element is attached on constructor but touch gesture is not wanted, touchDura
 
 [Check demo page to see how it looks!](https://remziatay.github.io/circle-context-menu/ "Demo page")
 
+---
+
+**New:** Elements now can be attached or detached manually as well.
+
+```js
+menu.attach(myElement);
+menu.detach(myElement);
+```
+
+**Warning:** A menu must not be attached to more than one element.
+
+---
+
 #### Constructor parameters
 
 | Name               | Description                                   | Default             |
