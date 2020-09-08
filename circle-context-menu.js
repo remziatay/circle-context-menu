@@ -33,14 +33,15 @@ export class CircleContextMenu {
     canvas.width = canvas.offsetWidth * window.devicePixelRatio
     canvas.height = canvas.offsetHeight * window.devicePixelRatio
 
-    canvas.oncontextmenu = (evt) => { if (evt.button === 2) evt.preventDefault() }
     canvas.style.userSelect = 'none'
+    canvas.oncontextmenu = (evt) => { if (evt.button === 2) evt.preventDefault() }
     canvas.onmousemove = (evt) => this.onmousemove(evt)
     canvas.ontouchmove = (evt) => this.ontouchmove(evt)
     canvas.ontouchend = () => this.choose()
     window.addEventListener('resize', () => this.resize())
-    if (onRelease) canvas.addEventListener('mouseup', () => this.choose())
-    else canvas.addEventListener('click', evt => { if (evt.button === 0) this.choose() })
+    if (onRelease) {
+      canvas.addEventListener('mouseup', () => { this.choose() })
+    } else canvas.addEventListener('click', evt => { if (evt.button === 0) this.choose() })
     this.hide()
   }
 
@@ -254,7 +255,7 @@ export class CircleContextMenu {
   }
 
   choose () {
-    this.hide()
+    setTimeout(() => { this.hide() }, 0)
     if (this.chosen !== undefined) { this.buttons[this.chosen].func() }
     this.chosen = undefined
   }
